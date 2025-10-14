@@ -1,7 +1,7 @@
 name: Build Ultimate Cat Clicker IPA
 
 on:
-  workflow_dispatch:  # Manual trigger to save macOS minutes
+  workflow_dispatch:
 
 jobs:
   build-ios:
@@ -48,18 +48,38 @@ jobs:
           echo "⚠️ ucc-icon.png not found - using default icon"
         fi
         
-    - name: Build iOS project (unsigned)
+    - name: Build iOS project
       run: |
         cd ios/App
         xcodebuild build -workspace App.xcworkspace -scheme App -configuration Debug CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
         
+    - name: Debug build structure
+      run: |
+        cd ios/App
+        echo "📁 Current directory: $(pwd)"
+        echo "📁 Listing contents:"
+        ls -la
+        echo "📁 Build directory contents:"
+        find build -type f -name "*.app" 2>/dev/null || echo "No .app files in build"
+        echo "📁 All .app files anywhere:"
+        find . -name "*.app" -type d 2>/dev/null || echo "No .app files found"
+        
     - name: Create IPA archive
       run: |
         cd ios/App
-        mkdir -p Payload
-        cp -r build/Debug-iphoneos/App.app Payload/
-        zip -r UltimateCatClicker.ipa Payload
-      
+        APP_PATH=$(find . -name "*.app" -type d | head -1)
+        if [ -n "$APP_PATH" ]; then
+          echo "🎯 Found app at: $APP_PATH"
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/
+          zip -r UltimateCatClicker.ipa Payload
+          echo "✅ IPA created successfully!"
+          ls -la UltimateCatClicker.ipa
+        else
+          echo "❌ No .app file found - build may have failed"
+          exit 1
+        fi
+        
     - name: Upload unsigned IPA
       uses: actions/upload-artifact@v4
       with:
