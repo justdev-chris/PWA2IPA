@@ -1,0 +1,68 @@
+name: Build Ultimate Cat Clicker IPA
+
+on:
+  workflow_dispatch:  # Manual trigger to save macOS minutes
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Create package.json
+      run: |
+        echo '{
+          "name": "ultimate-cat-clicker",
+          "version": "1.0.0", 
+          "devDependencies": {
+            "@capacitor/cli": "^5.0.0",
+            "@capacitor/ios": "^5.0.0"
+          }
+        }' > package.json
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Initialize Capacitor iOS
+      run: |
+        npx cap init "Ultimate Cat Clicker" "com.justchris.ucc" --web-dir www
+        npx cap add ios
+        
+    - name: Copy web assets
+      run: npx cap copy ios
+      
+    - name: Setup iOS icon
+      run: |
+        if [ -f "ucc-icon.png" ]; then
+          echo "🎨 Setting iOS icon from ucc-icon.png"
+          mkdir -p ios/App/App/Assets.xcassets/AppIcon.appiconset
+          cp ucc-icon.png ios/App/App/Assets.xcassets/AppIcon.appiconset/icon-1024.png
+          echo "✅ iOS icon set!"
+        else
+          echo "⚠️ ucc-icon.png not found - using default icon"
+        fi
+        
+    - name: Build iOS project (unsigned)
+      run: |
+        cd ios/App
+        xcodebuild build -workspace App.xcworkspace -scheme App -configuration Debug CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
+        
+    - name: Create IPA archive
+      run: |
+        cd ios/App
+        mkdir -p Payload
+        cp -r build/Debug-iphoneos/App.app Payload/
+        zip -r UltimateCatClicker.ipa Payload
+      
+    - name: Upload unsigned IPA
+      uses: actions/upload-artifact@v4
+      with:
+        name: ultimate-cat-clicker-unsigned-ipa
+        path: ios/App/UltimateCatClicker.ipa
+        retention-days: 3
