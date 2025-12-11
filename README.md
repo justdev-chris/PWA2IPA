@@ -2,7 +2,7 @@
 A tool which turns Progressive Web Apps into actual apps for iOS systems.
 # how to use
 1. fork this repo
-2. replace "ucc-icon.png" with your icon. (if file names are different please change it in the build.yml file.)
+2. replace "ucc-icon.png" with your icon. (if file names are different please change it in the buildipa.yml file.)
 3. replace all files in folder "www" with your html files.
 4. check actions page and click the latest build
 5. wait for it to build
